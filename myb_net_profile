@@ -59,8 +59,19 @@ case "${myb_net_cur_profile}" in
 esac
 
 new_profile=
-
 profile2_available=1
+
+if [ "${nodeip6}" = "0" -o "${nodeip6}" = "(null)" ]; then
+	profile2_available=0
+else
+	iptype ${nodeip6}
+	ret=$?
+	if [ ${ret} -ne 2 ]; then
+		${ECHO} "${W1_COLOR}Warning: Not valid IPv6 address: ${N2_COLOR}${nodeip6}${N0_COLOR}"
+		${ECHO} "${N1_COLOR}Please ADD IPv6 first via '${H3_COLOR}1) (Re)Configure Host Network${N4_COLOR}'"
+		profile2_available=0
+	fi
+fi
 
 profile1_color="${N2_COLOR}"
 profile1_desc="private networking + auto expose for RDP/SSH"
@@ -70,7 +81,8 @@ if [ ${profile2_available} -eq 1 ]; then
 	profile2_desc="same as profile1 + external IPv6 for second NIC"
 else
 	profile2_color="${N4_COLOR}"
-	profile2_desc="Please ADD IPv6 first via '${H3_COLOR}1) (Re)Configure Host Network${N4_COLOR}'"
+	profile2_desc="same as profile1 + external IPv6 for second NIC. Please add IPv6 first via '1) (Re)Configure Host Network'"
+	profile2_desc2="Please ADD IPv6 first via '${H3_COLOR}1) (Re)Configure Host Network${N4_COLOR}'"
 fi
 
 old_profile="${myb_net_cur_profile}"
@@ -83,7 +95,7 @@ echo
 
 
 ${ECHO} "${profile1_color} ${profile1_sign} 1) Single External IPv4 (${profile1_desc}).${N0_COLOR}"
-${ECHO} "${profile2_color} ${profile2_sign} 2) Multi-NIC IPv4 private / IPv6 (${profile1_desc})${N0_COLOR}"
+${ECHO} "${profile2_color} ${profile2_sign} 2) Multi-NIC IPv4 private / IPv6 (${profile2_desc})${N0_COLOR}"
 
 echo
 	read p
@@ -105,7 +117,7 @@ echo
 				profile1_sign=" "
 				profile2_sign="*"
 			else
-				${ECHO} "${W1_COLOR}Profile not available: ${N4_COLOR}${profile2_desc}${N0_COLOR}"
+				${ECHO} "${W1_COLOR}Profile not available: ${N4_COLOR}${profile2_desc2}${N0_COLOR}"
 				read p
 			fi
 			;;
