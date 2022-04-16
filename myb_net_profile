@@ -94,8 +94,8 @@ ${ECHO} "${H2_COLOR}--------------------${N0_COLOR}"
 echo
 
 
-${ECHO} "${profile1_color} ${profile1_sign} 1) Single External IPv4 (${profile1_desc}).${N0_COLOR}"
-${ECHO} "${profile2_color} ${profile2_sign} 2) Multi-NIC IPv4 private / IPv6 (${profile2_desc})${N0_COLOR}"
+${ECHO} "${profile1_color} ${profile1_sign} 1) Single NIC: private IPv4 (${profile1_desc}).${N0_COLOR}"
+${ECHO} "${profile2_color} ${profile2_sign} 2) Multi  NIC: private IPv4 / external IPv6 (${profile2_desc})${N0_COLOR}"
 
 echo
 	read p
@@ -143,6 +143,10 @@ case "${new_profile}" in
 			${IFCONFIG_CMD} bridge200 destroy > /dev/null 2>&1
 		fi
 		${SYSRC_CMD} -qf /etc/rc.conf cloned_interfaces-="bridge200" ifconfig_bridge200="" > /dev/null 2>&1
+
+		# k8s
+		[ ! -f /usr/jails/etc/k8world.conf ] && ${TOUCH_CMD} /usr/jails/etc/k8world.conf
+		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf multi_nic="0" > /dev/null 2>&1
 		;;
 	2)
 		gw42=$( dhcpdv6 )
@@ -158,6 +162,8 @@ case "${new_profile}" in
 		${SYSRC_CMD} -qf /etc/rc.conf cloned_interfaces+="bridge200" ifconfig_bridge200="inet6 ${gw42}/64 up" > /dev/null 2>&1
 		${IFCONFIG_CMD} bridge200 create > /dev/null 2>&1
 		${IFCONFIG_CMD} bridge200 inet6 ${gw42}/64 up > /dev/null 2>&1
+		[ ! -f /usr/jails/etc/k8world.conf ] && ${TOUCH_CMD} /usr/jails/etc/k8world.conf
+		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf multi_nic="1" > /dev/null 2>&1
 		;;
 esac
 
