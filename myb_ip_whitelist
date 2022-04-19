@@ -57,10 +57,11 @@ ${GREP_CMD} -v ^# ${TEMP_FILE} | ${GREP_CMD} . | ${SORT_CMD} -u > ${WHITELIST_FI
 ${ECHO} "${N1_COLOR}${CBSD_APP}: whitelist changed${N0_COLOR}"
 ${ECHO} "${N1_COLOR}Install new whitelist..${N0_COLOR}"
 ${MV_CMD} ${WHITELIST_FILE}.tmp ${WHITELIST_FILE}
-echo "deny all;" > ${WHITELIST_NGINX}
+${TRUNCATE_CMD} ${WHITELIST_NGINX}
 ${GREP_CMD} . ${WHITELIST_FILE} | while read _ip; do
 	echo "allow ${_ip};" >> ${WHITELIST_NGINX}
 done
+echo "deny all;" >> ${WHITELIST_NGINX}
 ${SERVICE_CMD} nginx reload
 
 exit 0
