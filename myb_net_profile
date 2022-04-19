@@ -152,6 +152,7 @@ case "${new_profile}" in
 		# k8s
 		[ ! -f /usr/jails/etc/k8world.conf ] && ${TOUCH_CMD} /usr/jails/etc/k8world.conf
 		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf multi_nic="0" > /dev/null 2>&1
+		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf K8S_MK_JAIL="0" > /dev/null 2>&1
 		;;
 	2)
 		gw42=$( dhcpdv6 )
@@ -169,6 +170,7 @@ case "${new_profile}" in
 		${IFCONFIG_CMD} bridge200 inet6 ${gw42}/64 up > /dev/null 2>&1
 		[ ! -f /usr/jails/etc/k8world.conf ] && ${TOUCH_CMD} /usr/jails/etc/k8world.conf
 		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf multi_nic="1" > /dev/null 2>&1
+		${SYSRC_CMD} -qf /usr/jails/etc/k8world.conf K8S_MK_JAIL="0" > /dev/null 2>&1
 		;;
 esac
 
