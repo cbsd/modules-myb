@@ -20,6 +20,9 @@ mode=
 NGINX_VHOST="/usr/local/etc/nginx/sites-available/mybee.conf"
 HTTP_TPL="/usr/local/etc/mybee/http-mybee.conf.tpl"
 HTTPS_TPL="/usr/local/etc/mybee/https-mybee.conf.tpl"
+HTTP_NGINX="/usr/local/etc/mybee/http-nginx.conf"
+HTTPS_NGINX="/usr/local/etc/mybee/https-nginx.conf"
+
 HTTPS_BOOT_TPL="/usr/local/etc/mybee/https-boot-mybee.conf.tpl"
 CERTBOT_CMD="/usr/local/bin/certbot"
 
@@ -36,6 +39,7 @@ case "${mode}" in
 	off)
 		# turn off SSL
 		${CAT_CMD} ${HTTP_TPL} > ${NGINX_VHOST}
+		${CP_CMD} ${HTTP_NGINX} /usr/local/etc/nginx/nginx.conf
 		${RM_CMD} -rf /usr/local/etc/letsencrypt
 		${SERVICE_CMD} nginx reload
 		${TRUNCATE_CMD} -s0 /root/bin/certbot.sh
@@ -90,12 +94,14 @@ if [ ${ret} -ne 0 ]; then
 	echo "nginx configtest error. Press key to restore rollback..."
 	read p
 	${CAT_CMD} ${HTTP_TPL} > ${NGINX_VHOST}
+	${CP_CMD} ${HTTP_NGINX} /usr/local/etc/nginx/nginx.conf
 	${SERVICE_CMD} nginx reload
 	${TRUNCATE_CMD} -s0 /root/bin/certbot.sh
 	${CHMOD_CMD} +x /root/bin/certbot.sh
 	exit ${ret}
 fi
 
+${CP_CMD} ${HTTPS_NGINX} /usr/local/etc/nginx/nginx.conf
 ${SERVICE_CMD} nginx restart
 /usr/local/bin/certbot -n --agree-tos --email root@${API_FQDN} --webroot -w /usr/local/www/letsencrypt certonly -d ${API_FQDN}
 ret=$?
@@ -105,6 +111,7 @@ if [ ! -r /usr/local/etc/letsencrypt/live/${API_FQDN}/fullchain.pem ]; then
 	echo "Press key to restore rollback..."
 	read p
 	${CAT_CMD} ${HTTP_TPL} > ${NGINX_VHOST}
+	${CP_CMD} ${HTTP_NGINX} /usr/local/etc/nginx/nginx.conf
 	${SERVICE_CMD} nginx reload
 	${TRUNCATE_CMD} -s0 /root/bin/certbot.sh
 	${CHMOD_CMD} +x /root/bin/certbot.sh
@@ -119,6 +126,7 @@ if [ ${ret} -ne 0 ]; then
 	echo "nginx configtest error. Press key to restore rollback..."
 	read p
 	${CAT_CMD} ${HTTP_TPL} > ${NGINX_VHOST}
+	${CP_CMD} ${HTTP_NGINX} /usr/local/etc/nginx/nginx.conf
 	${SERVICE_CMD} nginx reload
 	${TRUNCATE_CMD} -s0 /root/bin/certbot.sh
 	${CHMOD_CMD} +x /root/bin/certbot.sh
