@@ -69,9 +69,12 @@ while [ true ]; do
 
 	printf "Enter valid FQDN: "
 	read ofqdn
-	${SYSRC_CMD} -qf ${tmp_choice} fqdn="${ofqdn}" > /dev/null 2>&1
-	fqdn="${ofqdn}"
-	[ -n "${fqdn}" ] && break
+	if [ -n "${ofqdn}" ]; then
+		echo "Letsencrypt for: ${ofqdn}..."
+		${SYSRC_CMD} -qf ${tmp_choice} fqdn="${ofqdn}" > /dev/null 2>&1
+		fqdn="${ofqdn}"
+		break
+	fi
 done
 
 trap "" SIGHUP SIGINT SIGTERM
