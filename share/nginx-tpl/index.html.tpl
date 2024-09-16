@@ -61,12 +61,12 @@ pre {
     # get available images:
     [you@home ~$] curl %%SCHEMA%%://%%IP%%/images
 
-    [you@home ~$] cat debian11.json
+    [you@home ~$] cat debian12.json
     {
       "imgsize": "10g",
       "ram": "1g",
-      "cpus": "2",
-      "image": "debian11",
+      "cpus": 2,
+      "image": "debian12",
       "pubkey": "ssh-ed25519 AAAA..XXX your@localhost"
     }
 
