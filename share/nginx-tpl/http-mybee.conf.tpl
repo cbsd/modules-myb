@@ -72,6 +72,13 @@ server {
 		proxy_redirect off;
 		proxy_pass http://127.0.0.1:9997;
 	}
+	location ~ ^/api/v1/controller {
+		proxy_set_header X-Forwarded-For $remote_addr;
+		proxy_set_header X-Forwarded-Host $http_host;
+		proxy_set_header        Host    $Host;
+		proxy_redirect off;
+		proxy_pass http://127.0.0.1:9997;
+	}
 	location ~ ^/api/v1/providers {
 		proxy_set_header X-Forwarded-For $remote_addr;
 		proxy_set_header X-Forwarded-Host $http_host;
