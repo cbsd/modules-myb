@@ -52,7 +52,7 @@ pre {
 <pre>
     <output id="content">
     <span id="welcome"></span><span id="platform" style="display: none;"># <a href="https://myb.convectix.com">MyBee</a> - The most simplified API for creating and destroying K8S & cloud VMs</span>
-    <span id="plans" style="display: none;"># the number of VMs is limited only by your resources. Dashboard: <a target="_blank" href="%%SCHEMA%%://%%IP%%/status">%%SCHEMA%%://%%IP%%/status</a></span>
+    <span id="plans" style="display: none;"># Dashboard: <a target="_blank" href="%%SCHEMA%%://%%IP%%/status">%%SCHEMA%%://%%IP%%/status</a>, # Shell: <a target="_blank" href="%%SCHEMA%%://%%IP%%/shell/">Console</a></span>
     <span id="curlimg1" style="display: none;">[you@home ~$]</span><span id="curlimg"></span>
     <span id="othercmd" style="display: none;">
     # get clusters status:
@@ -90,9 +90,8 @@ pre {
     </span>
      <span id="contactus" style="display: none;">
      # Сheck out <a target="_blank" href="https://github.com/myb-project/guide">MyB Handbook</a> before start.
-
-     # Get <strong><a target="_blank" href="https://github.com/myb-project/mybee-qt"</a></strong>, MyBee QT6-based GUI client for Mobile and PC;
-     # Get <strong>nubectl</strong>, MyBee thin client for <a href="/nubectl/freebsd/nubectl">FreeBSD</a>, <a href="/nubectl/linux/nubectl">Linux, <a href="/nubectl/darwin/nubectl">MacOS/Darwin</a>, <a href="/nubectl/windows/nubectl">Windows</a>;
+     # Get <strong><a target="_blank" href="https://github.com/myb-project/mybee-qt">MyBee-QT</a></strong> &dash; MyBee QT6-based GUI client for Mobile and PC;
+     # Get <strong>nubectl</strong>  &dash; MyBee thin client for <a href="/nubectl/freebsd/nubectl">FreeBSD</a>, <a href="/nubectl/linux/nubectl">Linux, <a href="/nubectl/darwin/nubectl">MacOS/Darwin</a>, <a href="/nubectl/windows/nubectl">Windows</a>;
      # Reach us <a target="_blank" href="https://t.me/mybgroup">on Telegram</a>;
      # Reach us <a target="_blank" href="https://twitter.com/">on Twitter</a>;
      # Support the project: <a target="_blank" href="https://www.patreon.com/clonos">via Patreon</a>;
