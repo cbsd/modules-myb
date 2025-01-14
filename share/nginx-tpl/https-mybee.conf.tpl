@@ -33,6 +33,14 @@ server {
 	ssl_certificate /usr/local/etc/letsencrypt/live/%%API_FQDN%%/fullchain.pem;
 	ssl_certificate_key /usr/local/etc/letsencrypt/live/%%API_FQDN%%/privkey.pem;
 
+	location /c/ {
+		index off;
+		types { }
+		default_type application/json;
+		try_files $uri =404;
+		root /usr/local/www/config;
+	}
+
 	location /status {
 		include acl.conf;
 		root /usr/local/www/status;
