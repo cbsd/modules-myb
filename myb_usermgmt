@@ -1,0 +1,192 @@
+#!/usr/local/bin/cbsd
+MYARG="user"
+MYOPTARG=
+MYDESC="Manage CBSD API whitelist file via mcedit"
+CBSDMODULE="myb"
+ADDHELP="
+
+${H3_COLOR}Description${N0_COLOR}:
+
+Manage /usr/local/etc/cbsd-mq-api.allow content via mcedit.
+
+"
+EXTHELP=
+
+. ${subrdir}/tools.subr
+user=
+. ${subrdir}/cbsdinit.subr
+. ${subrdir}/system.subr
+. ${dialog}
+
+failed()
+{
+	echo
+	echo "Interrupted"
+	_res=$( ${ID_CMD} -P ${user} 2>/dev/null )
+	_ret=$?
+	if [ ${_ret} -eq 0 ]; then
+		${PW_CMD} userdel ${user}
+		[ -d /home/${user} ] && ${RM_CMD} -rf /home/${user}
+	fi
+
+	exit 0
+}
+
+dialog_menu_main()
+{
+	local title=" Client SSH user: ${user} "
+	hline=
+	local defaultitem=
+
+	f_dialog_default_fetch defaultitem
+
+	local menu_list=
+
+	menu_list="${menu_list} 'credential_link' 'credential_link'  'Generate one-time credential URL (e.g. for MyBee-QT)'"
+	menu_list="${menu_list} 'password'        'password'         'Change password for ${user} user'"
+	menu_list="${menu_list} 'REMOVE'          'REMOVE'           'Remove ${user} user'"
+	menu_list="${menu_list} '-'               '-'                ''"
+	menu_list="${menu_list} 'EXIT'            'EXIT'             'EXIT'"
+	cbsd_menubox
+	retval=$?
+
+	f_dialog_data_sanitize menu_choice
+	f_dialog_menutag_store "$menu_choice"
+	f_dialog_default_store "$menu_choice"
+
+	return $retval
+}
+
+remove_user()
+{
+	if getyesno "Remove user ${user} ?"; then
+		${PW_CMD} userdel ${user}
+		[ -d /home/${user} ] && ${RM_CMD} -rf /home/${user}
+		return 0
+	fi
+	return 1
+}
+
+mgmt_tui()
+{
+	while [ 1 ]; do
+		dialog_menu_main || f_die
+
+		index=${mtag%% *}
+		mychoice=${mtag##* }
+
+		case "${mychoice}" in
+			"-")
+				continue
+				;;
+			REMOVE)
+				remove_user && exit 0
+				;;
+			credential_link)
+				credential_link
+				read p
+				exit 0
+				;;
+			EXIT)
+				exit 0
+				;;
+		esac
+	done
+}
+
+add_user()
+{
+	echo "Create new SSH user"
+
+	while [ 1 ]; do
+		printf "Username: "
+		read user
+
+		user_len=${#user}
+
+		if [ ${user_len} -gt 8 ]; then
+			echo "Username length too long, please use a shorter"
+			continue
+		fi
+
+		_res=$( ${ID_CMD} -P ${user} 2>/dev/null )
+		_ret=$?
+		if [ ${_ret} -eq 0 ]; then
+			echo "Username already exist:"
+			echo "${_res}"
+			continue
+		fi
+
+		if getyesno "Add user [${user}], OK?"; then
+			${PW_CMD} useradd ${user} -d /home/${user} -G cbsd -u 10000 -s /bin/sh -m
+			_ret=$?
+			if [ ${_ret} -ne 0 ]; then
+				echo "Error"
+				read p
+				exit ${_ret}
+			fi
+			if ! getyesno "Do you want to block the password in favor of SSH key-only access?"; then
+				trap "failed" HUP INT ABRT BUS TERM EXIT
+				while [ 1 ]; do
+					/usr/bin/passwd ${user}
+					_ret=$?
+					if [ ${_ret} -eq 0 ]; then
+						trap "" HUP INT ABRT BUS TERM EXIT
+						break
+					fi
+				done
+				break
+			else
+				break
+			fi
+		fi
+	done
+
+	# keygen
+	_keyfile="/home/${user}/.ssh/id_ed25519"
+
+	if [ ! -r "${_keyfile}" ]; then
+		keygen
+	fi
+}
+
+credential_link()
+{
+	echo "Credential link: https://zx.convectix.com/c/Le9foh"
+}
+
+keygen()
+{
+	[ ! -d /home/${user}/.ssh ] && ${MKDIR_CMD} -m 0750 /home/${user}/.ssh
+	${SSH_KEYGEN_CMD} -t ed25519 -f ${_keyfile} -N '' > /dev/null 2>&1
+	_ret=$?
+	if [ ${_ret} -ne 0 ]; then
+		echo "error: ${SSH_KEYGEN_CMD} -t ed25519 -f ${_keyfile} -N ''"
+		exit 0
+	fi
+
+	return 0
+}
+
+if [ "${user}" = "10000" ]; then
+	_res=$( ${ID_CMD} -P 10000 2>/dev/null )
+	_ret=$?
+	if [ ${_ret} -eq 0 ]; then
+		user=$( echo ${_res} | ${TR_CMD} ":" " " | ${AWK_CMD} '{printf $1}' )
+		mgmt_tui
+	else
+		add_user
+		credential_link
+		exit 0
+	fi
+else
+	_res=$( ${ID_CMD} -P ${user} 2>/dev/null )
+	_ret=$?
+	if [ ${_ret} -eq 0 ]; then
+		mgmt_tui
+	else
+		add_user
+	fi
+fi
+
+exit 0
