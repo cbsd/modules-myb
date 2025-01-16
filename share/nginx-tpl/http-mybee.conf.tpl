@@ -16,18 +16,19 @@ server {
 
 	include mime.types;
 
-	location /c/ {
-		index off;
-		types { }
-		default_type application/json;
-		try_files $uri =404;
-		root /usr/local/www/config;
-	}
-
 	location /status {
 		include acl.conf;
 		root /usr/local/www/status;
 		try_files /status.html =404;
+	}
+
+	location /c/ {
+		include acl.conf;
+		types { }
+		default_type application/json;
+		# /c/ -> /api/v1/otc/
+		rewrite /c/(.*) /api/v1/otc/$1 break;
+		proxy_pass http://api;
 	}
 
 	location /images {
