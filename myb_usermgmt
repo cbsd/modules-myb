@@ -152,7 +152,55 @@ add_user()
 
 credential_link()
 {
-	echo "Credential link: https://zx.convectix.com/c/Le9foh"
+	local _lnk= _myurl=
+	local _host= _res= _scheme=
+	_lnk=$( random_password_gen -l 6 | ${TR_CMD} -d '+')
+	[ -r /etc/rc.conf ] && . /etc/rc.conf
+
+	# /etc/rc.conf vars
+	case "${API_FQDN}" in
+		disabled|'')
+			if [ -z "${ip4}" -a -z "${ip6}" ]; then
+				${ECHO} "${N1_COLOR}no such API_FQDN variable${N0_COLOR}"
+				read p
+				exit 1
+			fi
+			_myurl="${ip4}/c/${_lnk}"
+			_host="http://${ip4}"
+			_scheme="http"
+			;;
+		*)
+			_myurl="${API_FQDN}/c/${_lnk}"
+			_host="https://${API_FQDN}"
+			_scheme="https"
+			;;
+	esac
+
+	if [ ! -d /usr/local/www/config/c ]; then
+		${MKDIR_CMD} -m 0700 /usr/local/www/config/c
+		${CHOWN_CMD} cbsd:cbsd /usr/local/www/config/c
+	fi
+
+	_res=$( ${CAT_CMD} ~/.ssh/id_ed25519 | ${UUENCODE_CMD} -mr - | ${TR_CMD} -d '\r\n' )
+
+	${CAT_CMD} > /usr/local/www/config/c/${_lnk} <<EOF
+{
+  "host": "${_host}",
+  "http_port": 443,
+  "private_key": "${_res}",
+  "scheme": "https",
+  "ssh_port": 22,
+  "ssh_user": "${user}"
+}
+EOF
+
+	${CHMOD_CMD} 0600 /usr/local/www/config/c/${_lnk}
+	${CHOWN_CMD} cbsd:cbsd /usr/local/www/config/c/${_lnk}
+
+	echo "One-time link, do not open! Paste into the MyBee-QT credential import button:"
+	echo
+	echo " ${_scheme}://${_myurl} "
+	echo
 }
 
 keygen()
@@ -168,25 +216,20 @@ keygen()
 	return 0
 }
 
-if [ "${user}" = "10000" ]; then
-	_res=$( ${ID_CMD} -P 10000 2>/dev/null )
-	_ret=$?
-	if [ ${_ret} -eq 0 ]; then
-		user=$( echo ${_res} | ${TR_CMD} ":" " " | ${AWK_CMD} '{printf $1}' )
-		mgmt_tui
-	else
-		add_user
-		credential_link
-		exit 0
+_res=$( ${ID_CMD} -P 10000 2>/dev/null )
+_ret=$?
+if [ ${_ret} -eq 0 ]; then
+	user=$( echo ${_res} | ${TR_CMD} ":" " " | ${AWK_CMD} '{printf $1}' )
+
+	if [ ! -r /home/${user}/.ssh/id_ed25519 ]; then
+		keygen
 	fi
+
+	mgmt_tui
 else
-	_res=$( ${ID_CMD} -P ${user} 2>/dev/null )
-	_ret=$?
-	if [ ${_ret} -eq 0 ]; then
-		mgmt_tui
-	else
-		add_user
-	fi
+	add_user
+	credential_link
+	exit 0
 fi
 
 exit 0
