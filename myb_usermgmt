@@ -42,11 +42,12 @@ dialog_menu_main()
 
 	local menu_list=
 
-	menu_list="${menu_list} 'credential_link' 'credential_link'  'Generate one-time credential URL (e.g. for MyBee-QT)'"
-	menu_list="${menu_list} 'password'        'password'         'Change password for ${user} user'"
-	menu_list="${menu_list} 'REMOVE'          'REMOVE'           'Remove ${user} user'"
-	menu_list="${menu_list} '-'               '-'                ''"
-	menu_list="${menu_list} 'EXIT'            'EXIT'             'EXIT'"
+	menu_list="${menu_list} 'credential_link'	'credential_link'	'Generate one-time credential URL (e.g. for MyBee-QT)'"
+	menu_list="${menu_list} 'pubkey'		'show pubkey'		'Show/print pubkey for user ${user}'"
+	menu_list="${menu_list} 'password'		'Change password'	'Change password for ${user} user'"
+	menu_list="${menu_list} 'REMOVE'		'REMOVE'		'Remove ${user} user'"
+	menu_list="${menu_list} '-'			'-'			''"
+	menu_list="${menu_list} 'EXIT'			'EXIT'			'EXIT'"
 	cbsd_menubox
 	retval=$?
 
@@ -57,14 +58,85 @@ dialog_menu_main()
 	return $retval
 }
 
-remove_user()
+add_user_pubkey_acl()
 {
-	if getyesno "Remove user ${user} ?"; then
-		${PW_CMD} userdel ${user}
-		[ -d /home/${user} ] && ${RM_CMD} -rf /home/${user}
+	local _ret= _ssh_user=
+
+	WHITELIST_FILE="/usr/local/etc/cbsd-mq-api.allow"
+
+	if [ -r /home/${user}/.ssh/id_ed25519.pub ]; then
+		_ssh_user=$( ${GREP_CMD} -v '^#' /home/${user}/.ssh/id_ed25519.pub | ${GREP_CMD} . )
+	fi
+
+	[ -z "${_ssh_user}" ] && return 0
+
+	if [ -r ${WHITELIST_FILE} ]; then
+		${CP_CMD} -a ${WHITELIST_FILE}.bak
+		echo "${_ssh_user}" >> ${WHITELIST_FILE}
+		${SERVICE_CMD} cbsd-mq-api restart
+	else
+		echo "${_ssh_user}" > ${WHITELIST_FILE}
+		${SERVICE_CMD} cbsd-mq-api restart
+	fi
+}
+
+show_pubkey()
+{
+	local _ret= _ssh_user= _cid=
+
+	if [ -r /home/${user}/.ssh/id_ed25519.pub ]; then
+		_ssh_user=$( ${GREP_CMD} -v '^#' /home/${user}/.ssh/id_ed25519.pub | ${GREP_CMD} . )
+	fi
+
+	if [ -z "${_ssh_user}" ]; then
+		echo "no pubkey"
+		read p
 		return 0
 	fi
-	return 1
+
+	_cid=$( ${miscdir}/cbsd_md5 "${_ssh_user}" )
+
+	echo
+	echo "CID: ${_cid}"
+	echo "${_ssh_user}"
+	echo
+	read p
+
+	return 0
+}
+
+remove_user_pubkey_acl()
+{
+	local _ret= _ssh_user=
+	WHITELIST_FILE="/usr/local/etc/cbsd-mq-api.allow"
+
+	if [ -r /home/${user}/.ssh/id_ed25519.pub ]; then
+		_ssh_user=$( ${GREP_CMD} -v '^#' /home/${user}/.ssh/id_ed25519.pub | ${GREP_CMD} . )
+	fi
+
+	[ -z "${_ssh_user}" ] && return 0
+
+	if [ -r ${WHITELIST_FILE} ]; then
+		${CP_CMD} -a ${WHITELIST_FILE}.bak
+		${GREP_CMD} "${_ssh_user}" ${WHITELIST_FILE}.bak > ${WHITELIST_FILE}
+		_ret=$?
+		[ ${_ret} -eq 0 ] && ${SERVICE_CMD} cbsd-mq-api restart
+	fi
+}
+
+
+remove_user()
+{
+	if ! getyesno "Remove user ${user} ?"; then
+		return 1
+	fi
+
+	${PW_CMD} userdel ${user}
+	[ -d /home/${user} ] && ${RM_CMD} -rf /home/${user}
+
+	remove_user_pubkey_acl
+
+	return 0
 }
 
 mgmt_tui()
@@ -78,6 +150,9 @@ mgmt_tui()
 		case "${mychoice}" in
 			"-")
 				continue
+				;;
+			pubkey)
+				show_pubkey
 				;;
 			REMOVE)
 				remove_user && exit 0
@@ -148,6 +223,8 @@ add_user()
 	if [ ! -r "${_keyfile}" ]; then
 		keygen
 	fi
+
+	add_user_pubkey_acl
 }
 
 credential_link()
@@ -225,6 +302,7 @@ if [ ${_ret} -eq 0 ]; then
 
 	if [ ! -r /home/${user}/.ssh/id_ed25519 ]; then
 		keygen
+		add_user_pubkey_acl
 	fi
 
 	mgmt_tui

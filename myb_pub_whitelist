@@ -20,11 +20,33 @@ WHITELIST_FILE="/usr/local/etc/cbsd-mq-api.allow"
 
 [ ! -r ${WHITELIST_FILE} ] && ${TOUCH_CMD} ${WHITELIST_FILE}
 
+_ssh_user=
+
+_res=$( ${ID_CMD} -P 10000 2>/dev/null )
+_ret=$?
+if [ ${_ret} -eq 0 ]; then
+	user=$( echo ${_res} | ${TR_CMD} ":" " " | ${AWK_CMD} '{printf $1}' )
+	if [ -r /home/${user}/.ssh/id_ed25519.pub ]; then
+		_ssh_user=$( ${GREP_CMD} -v '^#' /home/${user}/.ssh/id_ed25519.pub | ${GREP_CMD} . )
+	fi
+fi
+
 TEMP_FILE=$( mktemp )
 ${CAT_CMD} > ${TEMP_FILE} <<EOF
 # use 'authorized_keys' file format: one key per line in the form of "type key comment":
 # ^(ssh-rsa|ssh-dss|ssh-ed25519|ecdsa-[^ ]+) ([^ ]+) ?(.*)
 EOF
+
+${GREP_CMD} -q "${_ssh_user}" ${WHITELIST_FILE} > /dev/null 2>&1
+_ret=$?
+[ ${_ret} -eq 0 ] && _ssh_user=
+
+if [ -n "${_ssh_user}" ]; then
+	${CAT_CMD} >> ${TEMP_FILE} <<EOF
+# /home/${user}/.ssh/id_ed25519.pub auto-added:
+${_ssh_user}
+EOF
+fi
 
 ${GREP_CMD} -v '^#' ${WHITELIST_FILE} | ${GREP_CMD} . | ${SORT_CMD} -u >> ${TEMP_FILE}
 
